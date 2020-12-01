@@ -101,7 +101,7 @@ def linearRegression(X, y, lossFunction = 'RMSE', alpha = 1, convergenceCriterio
 
 
 if __name__ == '__main__':
-    data = pd.read_csv('MetroInterstateTrafficVolumeTest.csv', delimiter = ',')
+    data = pd.read_csv('../MetroInterstateTrafficVolumeTest.csv', delimiter = ',')
     
     #make it so that number of columns doesn't matter and deal with one hot encoding later
     #X = data.drop(['traffic_volume', 'holiday', 'weather_main', 'weather_description', 'date_time'], axis=1)
