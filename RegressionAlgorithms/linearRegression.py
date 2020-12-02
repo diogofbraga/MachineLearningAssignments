@@ -62,13 +62,15 @@ def MAE(y, yPred):
 def ddwMAE(i, X,  y, yPred, weights):
     return(float(np.mean(np.sign(y.subtract(yPred, axis = 0)).multiply(-X.iloc[:,i], axis=0))))
 
-def updateWeights(X, y, yPred, weightsOld, alpha, lossFkt, ddwLossFkt):
-    NWeights = len(weightsOld)
-    weightsNew = np.zeros(NWeights)
-    loss = lossFkt(y, yPred)
-    for i in range(0, NWeights):
-        weightsNew[i] = weightsOld[i] - alpha[i] * ddwLossFkt(i, X, y, yPred, weightsOld)
-    return(weightsNew, loss)
+#weights, loss, alpha = updateWeights(X, y, yPred, weights, alpha, lossDict[lossFunction], ddwLossDict[lossFunction])
+#def updateWeights(X, y, yPred, weightsOld, alpha, lossFkt, ddwLossFkt):
+#    NWeights = len(weightsOld)
+#    weightsNew = np.zeros(NWeights)
+#    lossOld = lossFkt(y, yPred)
+#    for i in range(0, NWeights):
+#        weightsNew[i] = weightsOld[i] - alpha[i] * ddwLossFkt(i, X, y, yPred, weightsOld)
+#    loss = lossFkt(y, yPred)
+#    return(weightsNew, loss, alpha)
 
 def linearRegression(X, y, lossFunction = 'RMSE', alpha = [], mu = 1, convergenceCriterion = 1e-4, alphaMethod = 'lin', 
                      printOutput = False, initialWeights = 'Zero', maxIterations = None):
@@ -124,23 +126,43 @@ def linearRegression(X, y, lossFunction = 'RMSE', alpha = [], mu = 1, convergenc
     if initialWeights == 'Manual':
         weights = initialWeights
     #weights = np.array([0.223, 0.892, 3.347, 4.661])
+    weightsNew = np.zeros(NVar)
     if printOutput == True:
         print('Initial weights = ', weights)    
         
-    loss = convergenceCriterion + 1
+    #eqaution to be solved:
+    #Y = w0*X0 + w1*X1 + w2*X2 ...<- here X0 is the bias column (=[1]*NVal)
+    yPred = X.multiply(weights, axis = 1).sum(axis = 1)
+    lossOld = 0
+    lossNew = 10000
     counter = 1
-
-    while loss > convergenceCriterion:
+    while np.abs(lossOld-lossNew) > convergenceCriterion:
         if maxIterations == counter:
             break
+        
         alpha = alphaMethodDict[alphaMethod](alpha0, counter, mu)
-        
-        #eqaution to be solved:
-        #Y = w0*X0 + w1*X1 + w2*X2 ...<- here X0 is the bias column (=[1]*NVal)
-        yPred = X.multiply(weights, axis = 1).sum(axis = 1)
-        
+        lossOld = lossDict[lossFunction](y, yPred) 
         #update weights and calc loss function and its derivative:
-        weights, loss = updateWeights(X, y, yPred, weights, alpha, lossDict[lossFunction], ddwLossDict[lossFunction])
+        for i in range(0, NVar):
+            derivative = ddwLossDict[lossFunction](i, X, y, yPred, weights)
+            weightsNew[i] = weights[i] - alpha[i] * derivative
+            yPred = X.multiply(weightsNew, axis = 1).sum(axis = 1)
+            loss = lossDict[lossFunction](y, yPred)
+            #if alpha is too large the error explodes...
+            #this makes the solution basially independent of the initial alpha
+            #after the while iteration is done for the first time
+            #actually initial alpha needs to be large enough!
+            while loss > lossOld:
+                weightsNew[i] = weights[i] - alpha[i] * derivative
+                yPred = X.multiply(weightsNew, axis = 1).sum(axis = 1)
+                loss = lossDict[lossFunction](y, yPred)
+                alpha[i] /= 1.5
+                print('new alpha = ', alpha)
+
+        weights[:] = weightsNew[:]
+        yPred = X.multiply(weights, axis = 1).sum(axis = 1)
+        lossNew = loss
+        
         if printOutput == True:
             print('===================================')
             print('iteration = ', counter)
@@ -191,24 +213,25 @@ if __name__ == '__main__':
     path = '../MetroInterstateTrafficVolume/MetroInterstateTrafficVolume.csv'
     data = pd.read_csv(path, delimiter = ',')
     
-    #X = data.drop(['rain_1h', 'snow_1h', 'traffic_volume', 'holiday', 'weather_main', 'weather_description', 'date_time'], axis=1)
-    #y = data['traffic_volume']
+    X = data.drop(['rain_1h', 'snow_1h', 'traffic_volume', 'holiday', 'weather_main', 'weather_description', 'date_time'], axis=1)
+    y = data['traffic_volume']
     #X = pd.DataFrame(data = np.array([[1, 1], [1, 2], [2, 2], [2, 3]]))
     #y = pd.DataFrame(data = (np.dot(X, np.array([1, 2])) + 3))
+    '''
     N1 = 20000
     x = np.linspace(0,200, num = N1)
     x1 = x+2
-    #x2 = x*4-3
-    #x3 = x*15-7
-    N2 = 1
-    #N2 = 3
+    x2 = x*4-3
+    x3 = x*15-7
+    #N2 = 1
+    N2 = 3
     xges = np.zeros((N1,N2))
     xges[:, 0] = x1[:]
-    #xges[i, 1] = x2[i]
-    #xges[i, 2] = x3[i]
+    xges[:, 1] = x2[:]
+    xges[:, 2] = x3[:]
     X = pd.DataFrame(data = xges)
-    y = pd.DataFrame(data = (np.dot(X, np.array([2])) + 4))
-    
+    y = pd.DataFrame(data = (np.dot(X, np.array([2, 8, 2])) + 4))
+    '''
     
     print(X)
     print(y)
@@ -227,11 +250,13 @@ if __name__ == '__main__':
     
     start = time.time()
     #alpha = [1e-9, 1e-9, 1e-9, 2.5e-6]
-    alpha = [5e-4, 5e-2]
+    #alpha = [5e-4, 5e-2]
+    alpha = [500, 500, 500, 500]
+    alphaMethod = 'const'
     #mu = 1e-2
     mu = 1
-    weights, score = linearRegression(X, y, alpha = alpha, mu = mu, convergenceCriterion = 1e-4, 
-                                             lossFunction = 'MSE', alphaMethod = 'sqrt', printOutput = False)
+    weights, score = linearRegression(X, y, alpha = alpha, mu = mu, convergenceCriterion = 1e-9, 
+                                      lossFunction = 'MSE', alphaMethod = alphaMethod, printOutput = True)
     yPred = predictLinearRegression(X, weights)
     #print('yPred = ', yPred)
     print('weights = ', weights)
