@@ -16,7 +16,7 @@ linearRegression(X, y, lossFunction = 'RMSE', alpha = 1, convergenceCriterion = 
 Input Parameters:
 1) X and y are analogous in use to scikit learn use. But MUST be pandas arrays here
 2) loss Function is used to calculate the deviation from the prediction to the target variable
-3) alpha is the leraning rate
+3) alpha is the learning rate
 4) convergenceCriterion sets the target accuracy for the fit. If the result of the loss function is smaller than 
    convergenceCriterion then the program stops.
 5) adaptAlpha divides alpha by 10, if loss function result is smaller than 10*alpha <- much better approaches can probably be found
@@ -28,8 +28,9 @@ Input Parameters:
 '''
 #using functions for loss function and derivative for now because it is more easily readable that way I think
 #probably less performant in python though...?
-def Rsquare(y, yPred):
-    return(1 - float(y.subtract(yPred, axis = 0).pow(2).sum() / y.subtract(y.mean(), axis = 0).pow(2).mean()))
+def Rsquare(ynp, yPred):
+    #return(1 - float(y.subtract(yPred, axis = 0).pow(2).sum() / y.subtract(y.mean(), axis = 0).pow(2).mean()))
+    return(1-np.sum(np.square(ynp-yPred))/np.mean(np.square(ynp-np.mean(ynp))))
 
 #this is dumb... the whole using of functions instead of ifs 
 #... probably worse than an if statement in the core iteration?
@@ -44,23 +45,29 @@ def alphaLin(alpha0, counter, mu):
 def alphaSqrt(alpha0, counter, mu):
     return(alpha0/np.sqrt(counter*mu))
 
-def RMSE(y, yPred):
-    return(float(np.sqrt(y.subtract(yPred, axis = 0).pow(2).mean())))
+def RMSE(ynp, yPred):
+    #return(float(np.sqrt(y.subtract(yPred, axis = 0).pow(2).mean())))
+    return(np.sqrt(np.mean(np.square(ynp-yPred))))
 
-def ddwRMSE(i, X,  y, yPred, weights):
-    return(float(np.mean(y.subtract(yPred, axis = 0).multiply(-X.iloc[:,i], axis=0))) / (RMSE(y,yPred)))
+def ddwRMSE(i, Xnp,  ynp, yPred, weights):
+    #return(float(np.mean(y.subtract(yPred, axis = 0).multiply(-X.iloc[:,i], axis=0))) / (RMSE(y,yPred)))
+    return(np.mean((ynp-yPred)*-Xnp[:,i]) / RMSE(ynp, yPred))
 
-def MSE(y, yPred):
-    return(float(y.subtract(yPred, axis = 0).pow(2).mean()))
+def MSE(ynp, yPred):
+    #return(float(y.subtract(yPred, axis = 0).pow(2).mean()))
+    return(np.mean(np.square(ynp-yPred)))
 
-def ddwMSE(i, X,  y, yPred, weights):
-    return(2*float(np.mean(y.subtract(yPred, axis = 0).multiply(-X.iloc[:,i], axis=0))))
+def ddwMSE(i, Xnp,  ynp, yPred, weights):
+    #return(2*float(np.mean(y.subtract(yPred, axis = 0).multiply(-X.iloc[:,i], axis=0))))
+    return(2*np.mean((ynp-yPred)*-Xnp[:,i]))
 
-def MAE(y, yPred):
-    return(float(y.subtract(yPred, axis = 0).abs().mean()))
+def MAE(ynp, yPred):
+    #return(float(y.subtract(yPred, axis = 0).abs().mean()))
+    return(np.mean(np.abs(ynp-yPred)))
 
-def ddwMAE(i, X,  y, yPred, weights):
-    return(float(np.mean(np.sign(y.subtract(yPred, axis = 0)).multiply(-X.iloc[:,i], axis=0))))
+def ddwMAE(i, Xnp,  ynp, yPred, weights):
+    #return(float(np.mean(np.sign(y.subtract(yPred, axis = 0)).multiply(-X.iloc[:,i], axis=0))))
+    return(np.mean(np.sign(ynp-yPred)*-Xnp[:,i]))
 
 #weights, loss, alpha = updateWeights(X, y, yPred, weights, alpha, lossDict[lossFunction], ddwLossDict[lossFunction])
 #def updateWeights(X, y, yPred, weightsOld, alpha, lossFkt, ddwLossFkt):
@@ -115,8 +122,13 @@ def linearRegression(X, y, lossFunction = 'RMSE', alpha = [], mu = 1, convergenc
     X.insert(loc = NVar, column = 'bias', value = biasCol)
     NVar += 1
 
+    #transform dataframes to numpy arrays:
+    Xnp = X.to_numpy()
+    ynp = y.to_numpy().T
+    
     if alpha == []:
         alpha = np.ones(NVar)*1000
+    #alpha = np.asarray(alpha)
     alpha0 = alpha
 
     #weigths for each column plus bias
@@ -133,34 +145,36 @@ def linearRegression(X, y, lossFunction = 'RMSE', alpha = [], mu = 1, convergenc
         
     #eqaution to be solved:
     #Y = w0*X0 + w1*X1 + w2*X2 ...<- here X0 is the bias column (=[1]*NVal)
-    yPred = X.multiply(weights, axis = 1).sum(axis = 1)
+    yPred = np.sum(Xnp*weights, axis = 1)
     lossOld = 0
-    lossNew = 10000
+    lossNew = 1e300
     counter = 1
     while np.abs(lossOld-lossNew) > convergenceCriterion:
         if maxIterations == counter:
             break
         
         #alpha = alphaMethodDict[alphaMethod](alpha0, counter, mu)
-        lossOld = lossDict[lossFunction](y, yPred) 
+        lossOld = lossDict[lossFunction](ynp, yPred)
         #update weights and calc loss function and its derivative:
         for i in range(0, NVar):
-            derivative = ddwLossDict[lossFunction](i, X, y, yPred, weights)
+            derivative = ddwLossDict[lossFunction](i, Xnp, ynp, yPred, weights)
             weightsNew[i] = weights[i] - alpha[i] * derivative
-            yPred = X.multiply(weightsNew, axis = 1).sum(axis = 1)
-            loss = lossDict[lossFunction](y, yPred)
+            yPred = np.sum(Xnp*weightsNew, axis = 1)
+            
+            loss = lossDict[lossFunction](ynp, yPred)
             #if alpha is too large the error explodes...
             #this makes the solution basially independent of the initial alpha
             #after the while iteration is done for the first time
             #actually initial alpha needs to be large enough!
             while loss > lossOld:
+
                 weightsNew[i] = weights[i] - alpha[i] * derivative
-                yPred = X.multiply(weightsNew, axis = 1).sum(axis = 1)
-                loss = lossDict[lossFunction](y, yPred)
+                yPred = np.sum(Xnp*weightsNew, axis = 1)
+                loss = lossDict[lossFunction](ynp, yPred)
                 alpha[i] /= 1.5
 
         weights[:] = weightsNew[:]
-        yPred = X.multiply(weights, axis = 1).sum(axis = 1)
+        yPred = np.sum(Xnp*weights, axis = 1)
         lossNew = loss
         
         if printOutput == True:
@@ -169,12 +183,12 @@ def linearRegression(X, y, lossFunction = 'RMSE', alpha = [], mu = 1, convergenc
             print('loss =', loss)
             print('alpha =', alpha)
             print('updated weights = ', weights)
-            #print('y =', y)
-            #print('yPred =', yPred)
+            print('ynp =', ynp)
+            print('yPred =', yPred)
         counter += 1
     #remove the additional bias column again!
     del X['bias']
-    return(weights, Rsquare(y, yPred))
+    return(weights, Rsquare(ynp, yPred))
 
 def predictLinearRegression(X, weights):
     NVal = X.count()[0]
@@ -250,7 +264,8 @@ if __name__ == '__main__':
     start = time.time()
     #alpha = [1e-9, 1e-9, 1e-9, 2.5e-6]
     #alpha = [5e-4, 5e-2]
-    alpha = [500, 500, 500, 500]
+    #alpha = [500, 500, 500, 500]
+    alpha = [] 
     alphaMethod = 'const'
     #mu = 1e-2
     mu = 1
