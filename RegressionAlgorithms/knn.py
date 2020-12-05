@@ -5,7 +5,7 @@ from statistics import mean, sqrt
 
 
 class KNN:
-    def __init__(self, data, label, features, target, mode=1, n_neighbours=5, distance_function=1, radius=0):
+    def __init__(self, data, label, features, mode=1, n_neighbours=5, distance_function=1, radius=0):
         self.data = data
         self.mode = mode
         self.n_neighbours = n_neighbours
@@ -13,9 +13,9 @@ class KNN:
         self.radius = radius
         self.label = label
         self.features = features
-        self.target = target
 
-    def run(self):
+    def run(self, target):
+        self.target = target
         neighbours = self.analyse(self.data, self.n_neighbours)
         results = self.calculate(neighbours)
         return results
