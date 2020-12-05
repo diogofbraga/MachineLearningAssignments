@@ -1,7 +1,7 @@
 import csv
 import time
 import math
-from statistics import mean, sqrt
+from statistics import mean
 
 
 class KNN:
@@ -33,7 +33,7 @@ class KNN:
                 features_sum = 0
                 for x in self.features:
                     features_sum = features_sum + pow(float(row[x])-float(self.target[x]),2)
-                distance = sqrt(features_sum)
+                distance = math.sqrt(features_sum)
         elif self.distance_function == 2: # Manhattan
             if len(self.features) == 1:
                 distance = abs(float(row[self.features[0]])-float(self.target[self.features[0]]))
