@@ -81,7 +81,6 @@ def ddwMAE(i, Xnp,  ynp, yPred, weights):
 
 def linearRegression(X, y, lossFunction = 'RMSE', alpha = [], mu = 1, convergenceCriterion = 1e-4, alphaMethod = 'lin', 
                      printOutput = False, initialWeights = 'Zero', maxIterations = None):
-    
     lossDict = {
         "RMSE": RMSE,
         "MSE": MSE,
@@ -122,10 +121,14 @@ def linearRegression(X, y, lossFunction = 'RMSE', alpha = [], mu = 1, convergenc
     X.insert(loc = NVar, column = 'bias', value = biasCol)
     NVar += 1
 
+    #print('X = ', X)
+    #print('y = ', y)
+
     #transform dataframes to numpy arrays:
-    Xnp = X.to_numpy()
-    ynp = y.to_numpy().T
+    Xnp = X.to_numpy(dtype='float32')
+    ynp = y.to_numpy(dtype='float32').T
     
+
     if alpha == []:
         alpha = np.ones(NVar)*1000
     #alpha = np.asarray(alpha)
@@ -145,6 +148,19 @@ def linearRegression(X, y, lossFunction = 'RMSE', alpha = [], mu = 1, convergenc
         
     #eqaution to be solved:
     #Y = w0*X0 + w1*X1 + w2*X2 ...<- here X0 is the bias column (=[1]*NVal)
+    
+    #print('Xnp = ', Xnp)
+    #print('ynp = ', ynp)
+    #print('weights = ', weights)
+
+    #print('Xnp all elements = ')
+    #for i in range(0, len(Xnp[:,0])):
+        #print('i = ', i, '  Xnp[i,:] = ', Xnp[i,:])
+        #for j in range(0, len(Xnp[0,:])):
+            #print('i,j = ', i,j, '  Xnp[i,j] = ', Xnp[i,j])
+    #print('tests on Xnp:', Xnp[23,5])
+    #print('tests on Xnp:', Xnp[23,6])
+
     yPred = np.sum(Xnp*weights, axis = 1)
     lossOld = 0
     lossNew = 1e300
@@ -178,7 +194,6 @@ def linearRegression(X, y, lossFunction = 'RMSE', alpha = [], mu = 1, convergenc
         lossNew = loss
         
         if printOutput == True:
-            print('===================================')
             print('iteration = ', counter)
             print('loss =', loss)
             print('alpha =', alpha)
@@ -186,16 +201,25 @@ def linearRegression(X, y, lossFunction = 'RMSE', alpha = [], mu = 1, convergenc
             print('ynp =', ynp)
             print('yPred =', yPred)
         counter += 1
+    #print('======== linearRegressionNumpy: Final Results ========')
+    #print('iterations = ', counter)
+    #print('loss =', loss)
+    #print('alpha =', alpha)
+    #print('updated weights = ', weights)
+    #print('ynp =', ynp)
+    #print('yPred =', yPred)
     #remove the additional bias column again!
     del X['bias']
-    return(weights, Rsquare(ynp, yPred))
+    return(weights, Rsquare(ynp, yPred), counter)
 
 def predictLinearRegression(X, weights):
     NVal = X.count()[0]
     NVar = len(X.columns)
     biasCol = np.ones(NVal)
     X.insert(loc = NVar, column = 'bias', value = biasCol)
-    yPred = X.multiply(weights, axis = 1).sum(axis = 1)
+    Xnp = X.to_numpy(dtype='float32')
+    yPred = np.sum(Xnp*weights, axis = 1)
+    
     #remove the additional bias column again!
     del X['bias']
     return(yPred)
@@ -208,14 +232,19 @@ def matrixSolution(X, y):
     biasCol = np.ones(NVal)
     X.insert(loc = NVar, column = 'bias', value = biasCol)
     NVar += 1 
+    
+    Xnp = X.to_numpy(dtype='float32')
+    ynp = y.to_numpy(dtype='float32').T
+    
     dS = np.zeros(NVar)
     wCoeffs = np.zeros((NVar,NVar)) 
     #w = ?
     for i in range(0, NVar):
-        dS[i] = float(2*y.multiply(X.iloc[:,i], axis=0).sum(axis=0))
+        #dS[i] = float(2*y.multiply(X.iloc[:,i], axis=0).sum(axis=0))
+        dS[i] = np.sum(2*ynp*Xnp[:,i])
     for i in range(0, NVar):
         for j in range(0, NVar):
-            wCoeffs[i,j] = 2*float(X.iloc[:,i].multiply(X.iloc[:,j]).sum(axis = 0)) 
+            wCoeffs[i,j] = 2*np.sum(Xnp[:,i]*Xnp[:,j]) 
     
     weights = scipy.linalg.solve(wCoeffs, dS) #<- uses LU decomposition therefore faster than inverting matrix...
     
@@ -231,20 +260,21 @@ if __name__ == '__main__':
     #y = data['traffic_volume']
     #X = pd.DataFrame(data = np.array([[1, 1], [1, 2], [2, 2], [2, 3]]))
     #y = pd.DataFrame(data = (np.dot(X, np.array([1, 2])) + 3))
-    N1 = 20000000
+    N1 = 2000
     x = np.linspace(0,200, num = N1)
     x1 = x+2
     x2 = x*4-3
     #x3 = x*15-7
-    N2 = 2
+    N2 = 1
     #N2 = 3
     xges = np.zeros((N1,N2))
     xges[:, 0] = x1[:]
-    xges[:, 1] = x2[:]
+    #xges[:, 1] = x2[:]
     #xges[:, 2] = x3[:]
     X = pd.DataFrame(data = xges)
     #y = pd.DataFrame(data = (np.dot(X, np.array([2, 8, 2])) + 4))
-    y = pd.DataFrame(data = (np.dot(X, np.array([2, -3])) + 4))
+    #y = pd.DataFrame(data = (np.dot(X, np.array([2, -3])) + 4))
+    y = pd.DataFrame(data = (np.dot(X, np.array([2])) + 4))
     
     print(X)
     print(y)
