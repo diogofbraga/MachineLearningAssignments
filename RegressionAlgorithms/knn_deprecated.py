@@ -5,8 +5,8 @@ from statistics import mean, sqrt
 
 
 class KNN:
-    def __init__(self, data, label, features, target, mode=1, n_neighbours=5, distance_function=1, radius=0):
-        self.data = data
+    def __init__(self, path, label, features, target, mode=1, n_neighbours=5, distance_function=1, radius=0):
+        self.path = path
         self.mode = mode
         self.n_neighbours = n_neighbours
         self.distance_function = distance_function
@@ -16,11 +16,12 @@ class KNN:
         self.target = target
 
     def run(self):
-        neighbours = self.analyse(self.data, self.n_neighbours)
+        data = self.read_data(self.path)
+        neighbours = self.analyse(data, self.n_neighbours)
         results = self.calculate(neighbours)
         return results
 
-    def read_csv(self, path):
+    def read_data(self, path):
         read_file = open(path, newline='')
         data = csv.DictReader(read_file)
         return data
@@ -80,7 +81,7 @@ class KNN:
 
 
 
-'''
+
 # Global variables
 path = '../MetroInterstateTrafficVolume/MetroInterstateTrafficVolume.csv'
 mode = 1 # 1 = KNeighbors; 2 = RadiusNeighbors
@@ -107,4 +108,3 @@ if __name__ == '__main__':
     knn = KNN(path, label, features, target)
     results = knn.run()
     print(results)
-'''
