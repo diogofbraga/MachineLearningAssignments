@@ -15,8 +15,9 @@ class KNN:
         self.features = features
 
     def run(self, target):
+        #self.data = self.read_csv(path)
         self.target = target
-        neighbours = self.analyse(self.data, self.n_neighbours)
+        neighbours = self.analyse()
         results = self.calculate(neighbours)
         return results
 
@@ -43,23 +44,39 @@ class KNN:
                     features_sum = features_sum + abs(float(row[x])-float(self.target[x]))
                 distance = features_sum
         return distance
-            
-    def analyse(self, data, n_neighours):
+
+    def worst_neighbour(self, neighbours):
+        worst_distance = -1
+        for x in neighbours:
+            if x['distance'] > worst_distance:
+                worst_distance = x['distance']
+                worst = x
+        return worst
+
+    def worst_distance_neighbour(self, neighbours):
+        worst_distance = -1
+        for x in neighbours:
+            if x['distance'] > worst_distance:
+                worst_distance = x['distance']
+        return worst_distance
+
+    def analyse(self):
         neighbours = []
 
-        for row in data:
+        for row in self.data:
             #print(row) 
             distance = self.distance_calculation(row)
             if self.mode == 1:
-                if (len(neighbours) < n_neighours) or (distance <= neighbours[0]['distance']):
-                    best = {'distance': distance, 'row': row}
-                    neighbours.insert(0, best)
-                    if len(neighbours) > n_neighours:
-                        neighbours.pop()
+                worst_distance = self.worst_distance_neighbour(neighbours)
+                if (len(neighbours) < self.n_neighbours) or (distance < worst_distance):
+                    element = {'distance': distance, 'row': row}
+                    neighbours.append(element)
+                    if len(neighbours) > self.n_neighbours:
+                        neighbours.remove(self.worst_neighbour(neighbours))
             elif self.mode == 2:
                 if distance <= self.radius:
-                    best = {'distance': distance, 'row': row}
-                    neighbours.append(best)
+                    element = {'distance': distance, 'row': row}
+                    neighbours.append(element)
         
         #print("Neighbours:")
         #for x in neighbours:
@@ -84,7 +101,7 @@ class KNN:
 # Global variables
 path = '../MetroInterstateTrafficVolume/MetroInterstateTrafficVolume.csv'
 mode = 1 # 1 = KNeighbors; 2 = RadiusNeighbors
-n_neighours = 5
+n_neigbhours = 5
 distance_function = 1 # 1 = Euclidean Distance; 2 = Manhattan Distance
 radius = 0 # 0 indicates no radius
 label = 'traffic_volume'
@@ -96,15 +113,15 @@ target = {'holiday': 'None', 'temp': '276.42', 'rain_1h': '0.0', \
 if __name__ == '__main__':
     path = '../MetroInterstateTrafficVolume/MetroInterstateTrafficVolume.csv'
     mode = 1 # 1 = KNeighbors; 2 = RadiusNeighbors
-    n_neighours = 5
+    n_neigbhours = 5
     distance_function = 1 # 1 = Euclidean Distance; 2 = Manhattan Distance
     radius = 0 # 0 indicates no radius
     label = 'traffic_volume'
-    features = ['temp']
+    features = ['temp', 'clouds_all']
     target = {'holiday': 'None', 'temp': '276.42', 'rain_1h': '0.0', \
             'snow_1h': '0.0', 'clouds_all': '20', 'weather_main': 'Haze', \
             'weather_description': 'haze', 'date_time': '2016-02-19 00:00:00', 'traffic_volume': '708'}
-    knn = KNN(path, label, features, target)
-    results = knn.run()
+    knn = KNN(path, label, features)
+    results = knn.run(target)
     print(results)
 '''
