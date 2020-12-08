@@ -100,18 +100,6 @@ class KNN:
 
 
 '''
-# Global variables
-path = '../MetroInterstateTrafficVolume/MetroInterstateTrafficVolume.csv'
-mode = 1 # 1 = KNeighbors; 2 = RadiusNeighbors
-n_neigbhours = 5
-distance_function = 1 # 1 = Euclidean Distance; 2 = Manhattan Distance
-radius = 0 # 0 indicates no radius
-label = 'traffic_volume'
-features = ['temp']
-target = {'holiday': 'None', 'temp': '276.42', 'rain_1h': '0.0', \
-        'snow_1h': '0.0', 'clouds_all': '20', 'weather_main': 'Haze', \
-        'weather_description': 'haze', 'date_time': '2016-02-19 00:00:00', 'traffic_volume': '708'}
-
 if __name__ == '__main__':
     path = '../MetroInterstateTrafficVolume/MetroInterstateTrafficVolume.csv'
     mode = 1 # 1 = KNeighbors; 2 = RadiusNeighbors
