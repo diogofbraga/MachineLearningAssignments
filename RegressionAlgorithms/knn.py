@@ -66,17 +66,19 @@ class KNN:
         for row in self.data:
             #print(row) 
             distance = self.distance_calculation(row)
-            if self.mode == 1:
+            if self.mode == 1: # KNeighbors
                 worst_distance = self.worst_distance_neighbour(neighbours)
                 if (len(neighbours) < self.n_neighbours) or (distance < worst_distance):
                     element = {'distance': distance, 'row': row}
-                    neighbours.append(element)
+                    if element['row'] != self.target:
+                        neighbours.append(element)
                     if len(neighbours) > self.n_neighbours:
                         neighbours.remove(self.worst_neighbour(neighbours))
-            elif self.mode == 2:
+            elif self.mode == 2: # RadiusNeighbors
                 if distance <= self.radius:
                     element = {'distance': distance, 'row': row}
-                    neighbours.append(element)
+                    if element['row'] != self.target:
+                        neighbours.append(element)
         
         #print("Neighbours:")
         #for x in neighbours:
