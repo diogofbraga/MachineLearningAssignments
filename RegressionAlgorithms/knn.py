@@ -5,17 +5,19 @@ from statistics import mean
 
 
 class KNN:
-    def __init__(self, data, label, features, mode=1, n_neighbours=5, distance_function=1, radius=0):
-        self.data = data
+    def __init__(self, data, label, features, mode=1, n_neighbours=5, distance_function=1, radius=0, path=''):
+        if path == '':
+            self.data = data
+        else:
+            self.data = self.read_csv(path)
+        self.label = label
+        self.features = features
         self.mode = mode
         self.n_neighbours = n_neighbours
         self.distance_function = distance_function
         self.radius = radius
-        self.label = label
-        self.features = features
 
     def run(self, target):
-        #self.data = self.read_csv(path)
         self.target = target
         neighbours = self.analyse()
         results = self.calculate(neighbours)
@@ -96,22 +98,3 @@ class KNN:
         
         result = mean(labels)
         return result
-
-
-
-'''
-if __name__ == '__main__':
-    path = '../MetroInterstateTrafficVolume/MetroInterstateTrafficVolume.csv'
-    mode = 1 # 1 = KNeighbors; 2 = RadiusNeighbors
-    n_neigbhours = 5
-    distance_function = 1 # 1 = Euclidean Distance; 2 = Manhattan Distance
-    radius = 0 # 0 indicates no radius
-    label = 'traffic_volume'
-    features = ['temp', 'clouds_all']
-    target = {'holiday': 'None', 'temp': '276.42', 'rain_1h': '0.0', \
-            'snow_1h': '0.0', 'clouds_all': '20', 'weather_main': 'Haze', \
-            'weather_description': 'haze', 'date_time': '2016-02-19 00:00:00', 'traffic_volume': '708'}
-    knn = KNN(path, label, features)
-    results = knn.run(target)
-    print(results)
-'''
