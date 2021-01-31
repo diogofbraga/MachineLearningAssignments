@@ -1,2 +1,2 @@
 # machinelearning
-Repository for Machine Learning code
+TU Wien Machine Learning course: Classification; Regression; Deep Learning.
